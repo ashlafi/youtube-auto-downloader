@@ -1,7 +1,6 @@
 import requests
 import feedparser
 import os
-import subprocess
 import json
 
 CHANNEL_ID = os.getenv("YT_CHANNEL_ID")
@@ -23,8 +22,16 @@ def save_last_video(video_id):
     json.dump({"id": video_id}, open(LAST_FILE, "w"))
 
 
-def download_video(url):
-    subprocess.run(["yt-dlp", "-f", "best", url, "-o", "video.mp4"])
+def download_via_api(url):
+    api = "https://savefrom.net/api/convert"
+    res = requests.get(api, params={"url": url}).json()
+
+    # لینک دانلود
+    download_url = res["url"][0]["url"]
+
+    # دانلود
+    video = requests.get(download_url)
+    open("video.mp4", "wb").write(video.content)
 
 
 def send_to_telegram():
@@ -42,8 +49,8 @@ def run():
 
     last = load_last_video()
 
-    if last is None or last["id"] != video_id:
-        download_video(video_url)
+    if last is None or last.get("id") != video_id:
+        download_via_api(video_url)
         send_to_telegram()
         save_last_video(video_id)
         print("New video processed:", video_url)
