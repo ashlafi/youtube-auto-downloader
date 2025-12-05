@@ -1,0 +1,40 @@
+name: YouTube Auto Downloader
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # هر ۱ ساعت یکبار
+  workflow_dispatch:       # اجرای دستی
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run script
+        env:
+          YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHANNEL_ID: ${{ secrets.TG_CHANNEL_ID }}
+        run: |
+          python youtube_auto.py
+
+      - name: Commit last_video.json
+        run: |
+          git config --local user.email "bot@example.com"
+          git config --local user.name "GitHub Bot"
+          git add last_video.json
+          git commit -m "Update last video ID" || echo "No changes"
+          git push
